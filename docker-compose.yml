@@ -8,17 +8,27 @@ services:
     ports:
       - "80:80"
       - "443:443"
-    env_file:
-      - .env
-    environment:
-      - DOMAIN=${DOMAIN}
+    depends_on:
+      - certbot
+      - ollama
+      - open-webui
     volumes:
       - ./nginx/nginx.template:/etc/nginx/nginx.template:ro
       - ./letsencrypt:/etc/letsencrypt
+      - ./certbot-data:/var/www/certbot
     command: /bin/sh -c "envsubst '$$DOMAIN' < /etc/nginx/nginx.template > /etc/nginx/nginx.conf && nginx -g 'daemon off;'"
-    depends_on:
-      - ollama
-      - open-webui
+    environment:
+      - DOMAIN=${DOMAIN}
+
+  certbot:
+    image: certbot/certbot
+    container_name: certbot
+    volumes:
+      - ./letsencrypt:/etc/letsencrypt
+      - ./certbot-data:/var/www/certbot
+    entrypoint: ["/bin/sh", "-c"]
+    command: |
+      certbot certonly --webroot -w /var/www/certbot --email lfelipeapo@hotmail.com --agree-tos --no-eff-email --force-renewal -d ${DOMAIN}
 
   ollama:
     image: ollama/ollama
