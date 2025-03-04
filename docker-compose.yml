@@ -8,21 +8,68 @@ services:
     ports:
       - "80:80"
       - "443:443"
-    depends_on:
-      - certbot
+    env_file:
+      - .env
+    environment:
+      - DOMAIN=${DOMAIN}
     volumes:
       - ./nginx/nginx.template:/etc/nginx/nginx.template:ro
       - ./letsencrypt:/etc/letsencrypt
     command: /bin/sh -c "envsubst '$$DOMAIN' < /etc/nginx/nginx.template > /etc/nginx/nginx.conf && nginx -g 'daemon off;'"
-    environment:
-      - DOMAIN=${DOMAIN}
+    depends_on:
+      - ollama
+      - open-webui
 
-  certbot:
-    image: certbot/certbot
-    container_name: certbot
+  ollama:
+    image: ollama/ollama
+    container_name: ollama
+    restart: unless-stopped
+    environment:
+      - OLLAMA_HOST=0.0.0.0
     volumes:
-      - ./letsencrypt:/etc/letsencrypt
-      - ./certbot-data:/var/www/certbot
+      - ./ollama-data:/root/.ollama
+    ports:
+      - "11434:11434"
+
+  ollama-model-loader:
+    image: docker:latest
+    container_name: ollama-model-loader
+    depends_on:
+      - ollama
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
     entrypoint: ["/bin/sh", "-c"]
-    command: |
-      certbot certonly --webroot -w /var/www/certbot --email seu-email@exemplo.com --agree-tos --no-eff-email --staging -d olama.duckdns.org
+    command:
+      - |
+        echo "⏳ Waiting for Ollama to be ready..."
+        until docker exec ollama ollama list >/dev/null 2>&1; do
+            sleep 2
+        done
+        echo "📥 Pulling models inside Ollama container..."
+        docker exec ollama ollama pull gemma:2b
+        docker exec ollama ollama pull deepseek-r1:1.5b
+        docker exec ollama ollama pull qwen2.5-coder:1.5b
+        docker exec ollama ollama pull codegemma:2b
+        docker exec ollama ollama pull phi4-mini
+        docker exec ollama ollama pull phi4
+        docker exec ollama ollama pull llama3.3
+        docker exec ollama ollama pull qwen2.5:14b
+        docker exec ollama ollama pull qwen2.5-coder:14b
+        echo "✅ Models downloaded. Exiting..."
+    restart: "no"
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
+    restart: unless-stopped
+    depends_on:
+      - ollama
+    environment:
+      - OLLAMA_BASE_URLS=http://ollama:11434
+      - ENV=dev
+      - WEBUI_AUTH=False
+      - WEBUI_SECRET_KEY=t0p-s3cr3t
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./webui-data:/app/data
