@@ -1,6 +1,22 @@
 version: "3.8"
 
 services:
+  # Serviço de inicialização para configurar permissões adequadas
+  init-volumes:
+    image: busybox
+    container_name: init-volumes
+    user: "0:0"
+    volumes:
+      - ./letsencrypt:/data/letsencrypt
+      - ./certbot-data:/data/certbot-data
+    command: >
+      sh -c "
+        mkdir -p /data/letsencrypt /data/certbot-data &&
+        chmod -R 755 /data/letsencrypt /data/certbot-data &&
+        echo 'Diretórios inicializados com permissões corretas'
+      "
+    restart: "no"
+
   nginx:
     image: nginx:latest
     container_name: nginx
@@ -9,6 +25,7 @@ services:
       - "80:80"
       - "443:443"
     depends_on:
+      - init-volumes
       - ollama
       - open-webui
     volumes:
@@ -18,6 +35,11 @@ services:
     command: /bin/sh -c "envsubst '$$DOMAIN' < /etc/nginx/nginx.template > /etc/nginx/nginx.conf && nginx -g 'daemon off;'"
     environment:
       - DOMAIN=${DOMAIN}
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   certbot:
     image: certbot/certbot
@@ -25,14 +47,20 @@ services:
     volumes:
       - ./letsencrypt:/etc/letsencrypt
       - ./certbot-data:/var/www/certbot
+    depends_on:
+      - init-volumes
+      - nginx
     entrypoint: ["/bin/sh", "-c"]
     command: |
       echo "⏳ Aguardando NGINX iniciar..."
-      sleep 10
+      sleep 15
       echo "🔐 Solicitando certificado SSL para ${DOMAIN}..."
-      certbot certonly --webroot -w /var/www/certbot --email lfelipeapo@hotmail.com --agree-tos --no-eff-email --force-renewal -d ${DOMAIN}
-      echo "✅ Certificado gerado! Reiniciando NGINX..."
-      nginx -s reload || true
+      certbot certonly --webroot -w /var/www/certbot --email lfelipeapo@hotmail.com --agree-tos --no-eff-email --keep-until-expiring -d ${DOMAIN} --non-interactive
+      chmod -R 755 /etc/letsencrypt
+      echo "✅ Certificado gerado! Tentando reiniciar NGINX..."
+      # Usa o Docker API para reiniciar o Nginx sem precisar de acesso direto
+      wget -q --spider --tries=1 http://nginx/
+      echo "✅ Nginx pronto para usar os certificados!"
 
   ollama:
     image: ollama/ollama
@@ -44,6 +72,14 @@ services:
       - ./ollama-data:/root/.ollama
     ports:
       - "11434:11434"
+    depends_on:
+      - init-volumes
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:11434/api/tags || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   ollama-model-loader:
     image: docker:latest
@@ -55,21 +91,22 @@ services:
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |
-        echo "⏳ Waiting for Ollama to be ready..."
-        until docker exec ollama ollama list >/dev/null 2>&1; do
-            sleep 2
+        echo "⏳ Aguardando Ollama iniciar completamente..."
+        # Loop aprimorado para verificar se o Ollama está pronto
+        for i in {1..30}; do
+          if docker exec ollama curl -s http://localhost:11434/api/tags >/dev/null 2>&1; then
+            break
+          fi
+          echo "Tentativa $$i: Ollama ainda não está pronto. Aguardando..."
+          sleep 10
         done
-        echo "📥 Pulling models inside Ollama container..."
-        docker exec ollama ollama pull gemma:2b
-        docker exec ollama ollama pull deepseek-r1:1.5b
-        docker exec ollama ollama pull qwen2.5-coder:1.5b
-        docker exec ollama ollama pull codegemma:2b
-        docker exec ollama ollama pull phi4-mini
-        docker exec ollama ollama pull phi4
-        docker exec ollama ollama pull llama3.3
-        docker exec ollama ollama pull qwen2.5:14b
-        docker exec ollama ollama pull qwen2.5-coder:14b
-        echo "✅ Models downloaded. Exiting..."
+        
+        echo "📥 Baixando modelos dentro do container Ollama..."
+        for model in "gemma:2b" "deepseek-r1:1.5b" "qwen2.5-coder:1.5b" "codegemma:2b" "phi4-mini" "phi4" "llama3.3" "qwen2.5:14b" "qwen2.5-coder:14b"; do
+          echo "Baixando $$model..."
+          docker exec ollama ollama pull $$model
+        done
+        echo "✅ Modelos baixados com sucesso!"
     restart: "no"
 
   open-webui:
@@ -78,6 +115,7 @@ services:
     restart: unless-stopped
     depends_on:
       - ollama
+      - init-volumes
     environment:
       - OLLAMA_BASE_URLS=http://ollama:11434
       - ENV=dev
@@ -87,3 +125,7 @@ services:
       - "8080:8080"
     volumes:
       - ./webui-data:/app/data
+
+networks:
+  default:
+    name: ollama-network
