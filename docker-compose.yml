@@ -21,7 +21,7 @@ services:
     container_name: nginx-http
     restart: "no"
     ports:
-      - "80:80"
+      - "81:80"
     depends_on:
       - init-volumes
     volumes:
@@ -45,8 +45,8 @@ services:
     container_name: nginx
     restart: unless-stopped
     ports:
-      - "80:80"
-      - "443:443"
+      - "81:80"
+      - "444:443"
     depends_on:
       - certbot
       - ollama
@@ -67,11 +67,11 @@ services:
     volumes:
       - ./ollama-data:/root/.ollama
     ports:
-      - "11434:11434"
+      - "11435:11434"
     depends_on:
       - init-volumes
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:11434/api/tags || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:11435/api/tags || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -89,7 +89,7 @@ services:
       - |
         echo "⏳ Aguardando Ollama iniciar completamente..."
         for i in {1..30}; do
-          if docker exec ollama curl -s http://localhost:11434/api/tags >/dev/null 2>&1; then
+          if docker exec ollama curl -s http://localhost:11435/api/tags >/dev/null 2>&1; then
             break
           fi
           echo "Tentativa $$i: Ollama ainda não está pronto. Aguardando..."
@@ -112,12 +112,12 @@ services:
       - ollama
       - init-volumes
     environment:
-      - OLLAMA_BASE_URLS=http://ollama:11434
+      - OLLAMA_BASE_URLS=http://ollama:11435
       - ENV=dev
       - WEBUI_AUTH=False
       - WEBUI_SECRET_KEY=t0p-s3cr3t
     ports:
-      - "8080:8080"
+      - "8181:8080"
     volumes:
       - ./webui-data:/app/data
 
