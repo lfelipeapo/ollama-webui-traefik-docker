@@ -9,7 +9,6 @@ services:
       - "80:80"
       - "443:443"
     depends_on:
-      - certbot
       - ollama
       - open-webui
     volumes:
@@ -23,15 +22,13 @@ services:
   certbot:
     image: certbot/certbot
     container_name: certbot
-    depends_on:
-      - nginx
     volumes:
       - ./letsencrypt:/etc/letsencrypt
       - ./certbot-data:/var/www/certbot
     entrypoint: ["/bin/sh", "-c"]
     command: |
       echo "⏳ Aguardando NGINX iniciar..."
-      sleep 5
+      sleep 10
       echo "🔐 Solicitando certificado SSL para ${DOMAIN}..."
       certbot certonly --webroot -w /var/www/certbot --email lfelipeapo@hotmail.com --agree-tos --no-eff-email --force-renewal -d ${DOMAIN}
       echo "✅ Certificado gerado! Reiniciando NGINX..."
