@@ -1,39 +1,74 @@
 #!/bin/bash
 
-# Update the package list
-sudo apt update
+# Detecta a distribuição
+if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    OS=$ID
+else
+    echo "Sistema não suportado."
+    exit 1
+fi
 
-# Install necessary prerequisites
-sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
+# Instalação no Ubuntu/Debian
+if [[ "$OS" == "ubuntu" || "$OS" == "debian" ]]; then
+    echo "Detectado: Ubuntu/Debian"
 
-# Add Docker’s official GPG key
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+    # Atualiza a lista de pacotes
+    sudo apt update
 
-# Add Docker’s official APT repository
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+    # Instala pacotes necessários
+    sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
 
-# Update the package list again to include Docker packages
-sudo apt update
+    # Adiciona a chave GPG oficial do Docker
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
 
-# Install Docker CE (Community Edition)
-sudo apt install -y docker-ce docker-ce-cli containerd.io
+    # Adiciona o repositório oficial do Docker
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 
-# Enable and start Docker service
-sudo systemctl enable docker
-sudo systemctl start docker
+    # Atualiza os pacotes e instala o Docker
+    sudo apt update
+    sudo apt install -y docker-ce docker-ce-cli containerd.io
 
-# Add the current user to the docker group to avoid using sudo
-sudo usermod -aG docker $USER
+    # Habilita e inicia o serviço do Docker
+    sudo systemctl enable docker
+    sudo systemctl start docker
 
-# Install Docker Compose
-DOCKER_COMPOSE_VERSION=$(curl -s https://api.github.com/repos/docker/compose/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')
-sudo curl -L "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+    # Adiciona o usuário ao grupo docker
+    sudo usermod -aG docker $USER
 
-# Make Docker Compose executable
-sudo chmod +x /usr/local/bin/docker-compose
+    # Instala Docker Compose
+    DOCKER_COMPOSE_VERSION=$(curl -s https://api.github.com/repos/docker/compose/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')
+    sudo curl -L "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
 
-# Verify installations
+    # Dá permissão de execução ao Docker Compose
+    sudo chmod +x /usr/local/bin/docker-compose
+
+    echo "Docker e Docker Compose instalados com sucesso no Ubuntu/Debian."
+
+# Instalação no Alpine Linux
+elif [[ "$OS" == "alpine" ]]; then
+    echo "Detectado: Alpine Linux"
+
+    # Atualiza os repositórios
+    sudo apk update
+
+    # Instala pacotes necessários
+    sudo apk add docker docker-cli docker-compose openrc
+
+    # Habilita e inicia o serviço do Docker
+    sudo rc-update add docker boot
+    sudo service docker start
+
+    # Adiciona o usuário ao grupo docker (para evitar uso de sudo)
+    addgroup $USER docker
+
+    echo "Docker e Docker Compose instalados com sucesso no Alpine Linux."
+
+else
+    echo "Sistema operacional não suportado para instalação automática."
+    exit 1
+fi
+
+# Exibir versões
 docker --version
 docker-compose --version
-
-echo "Docker and Docker Compose installation completed successfully."
