@@ -28,7 +28,7 @@ services:
       - ./certbot-data:/var/www/certbot
     entrypoint: ["/bin/sh", "-c"]
     command: |
-      certbot certonly --webroot -w /var/www/certbot --email lfelipeapo@hotmail.com --agree-tos --no-eff-email --force-renewal -d ${DOMAIN}
+      certbot certonly --webroot -w /var/www/certbot --email lfelipeapo@hotmail.com --agree-tos --no-eff-email --force-renewal -d ${DOMAIN} || true
 
   ollama:
     image: ollama/ollama
