@@ -12,7 +12,7 @@ services:
       - ollama
       - open-webui
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
     environment:
       - DOMAIN=${DOMAIN:-olama.duckdns.org}
 
@@ -44,7 +44,7 @@ services:
     command: |
       echo "⏳ Aguardando Ollama iniciar completamente..."
       for i in {1..30}; do
-        if docker exec ollama curl -s http://localhost:11435/api/tags >/dev/null 2>&1; then
+        if docker exec ollama curl -s http://localhost:11434/api/tags >/dev/null 2>&1; then
           break
         fi
         echo "Tentativa $$i: Ollama ainda não está pronto. Aguardando..."
