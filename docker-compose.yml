@@ -1,3 +1,5 @@
+version: "3.8"
+
 services:
   nginx:
     image: nginx:latest
@@ -5,7 +7,7 @@ services:
     restart: unless-stopped
     ports:
       - "81:80"       # HTTP
-      - "443:443"     # HTTPS (se necessário no futuro)
+      - "443:443"     # HTTPS
     depends_on:
       - ollama
       - open-webui
@@ -24,6 +26,17 @@ services:
       - ./ollama-data:/root/.ollama
     ports:
       - "11435:11434"
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        echo "⏳ Baixando modelos para o Ollama..."
+        for model in "gemma:2b" "mistral" "llama3" "qwen:7b"; do
+          echo "📥 Baixando $$model..."
+          ollama pull $$model
+        done
+        echo "✅ Modelos baixados!"
+        echo "🚀 Iniciando Ollama..."
+        /app/ollama
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:11434/api/tags || exit 1"]
       interval: 10s
