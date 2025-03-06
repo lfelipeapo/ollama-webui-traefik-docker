@@ -29,46 +29,22 @@ services:
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |
-        echo "⏳ Baixando modelos para o Ollama..."
-        for model in "gemma:2b" "mistral" "llama3" "qwen:7b"; do
-          echo "📥 Baixando $$model..."
-          ollama pull $$model
-        done
-        echo "✅ Modelos baixados!"
         echo "🚀 Iniciando Ollama..."
-        /app/ollama
+        ollama serve &   # Inicia o Ollama em background
+        sleep 10         # Aguarda a inicialização
+        echo "📥 Baixando modelos..."
+        for model in "gemma:2b" "deepseek-r1:1.5b" "qwen2.5-coder:1.5b" "codegemma:2b" "phi4-mini" "phi4" "llama3.3" "qwen2.5:14b" "qwen2.5-coder:14b"; do
+          echo "➡️ Baixando $$model..."
+          ollama pull $$model || echo "⚠️ Erro ao baixar $$model, ignorando..."
+        done
+        echo "✅ Modelos baixados! Servidor Ollama pronto."
+        wait
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:11434/api/tags || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
-
-  ollama-model-loader:
-    image: docker:latest
-    container_name: ollama-model-loader
-    depends_on:
-      - ollama
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    entrypoint: ["/bin/sh", "-c"]
-    command: |
-      echo "⏳ Aguardando Ollama iniciar completamente..."
-      for i in {1..30}; do
-        if docker exec ollama curl -s http://localhost:11434/api/tags >/dev/null 2>&1; then
-          break
-        fi
-        echo "Tentativa $$i: Ollama ainda não está pronto. Aguardando..."
-        sleep 10
-      done
-      
-      echo "📥 Baixando modelos dentro do container Ollama..."
-      for model in "gemma:2b" "deepseek-r1:1.5b" "qwen2.5-coder:1.5b" "codegemma:2b" "phi4-mini" "phi4" "llama3.3" "qwen2.5:14b" "qwen2.5-coder:14b"; do
-        echo "Baixando $$model..."
-        docker exec ollama ollama pull $$model
-      done
-      echo "✅ Modelos baixados com sucesso!"
-    restart: "no"
 
   open-webui:
     image: ghcr.io/open-webui/open-webui:main
@@ -78,7 +54,6 @@ services:
       - ollama
     environment:
       - OLLAMA_BASE_URLS=http://ollama:11434
-      - ENV=dev
       - WEBUI_AUTH=False
       - WEBUI_SECRET_KEY=t0p-s3cr3t
     ports:
