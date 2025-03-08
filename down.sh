@@ -23,7 +23,7 @@ for port in "${ports[@]}"; do
     kill_port_if_in_use "$port"
 done
 
-# Mata processos docker-proxy, se existirem
+# Finaliza processos docker-proxy
 echo "Finalizando processos docker-proxy..."
 pids=$(pgrep -f docker-proxy)
 if [[ -n "$pids" ]]; then
@@ -33,8 +33,20 @@ else
     echo "Nenhum processo docker-proxy encontrado."
 fi
 
-# Agora, derruba os containers
+# Derruba os containers via docker-compose
 echo "Derrubando os containers via docker-compose..."
 docker-compose down
+
+# Aguarda um pouco e força a remoção de qualquer container remanescente do projeto docker-compose
+sleep 2
+remaining_containers=$(docker ps -q --filter "label=com.docker.compose.project")
+if [[ -n "$remaining_containers" ]]; then
+    echo "Forçando remoção dos containers remanescentes do projeto docker-compose..."
+    for container in $remaining_containers; do
+        sudo docker kill -s SIGKILL "$container" && sudo docker rm -f "$container"
+    done
+else
+    echo "Nenhum container remanescente do docker-compose encontrado."
+fi
 
 echo "Limpeza completa! Containers e processos liberados!"
