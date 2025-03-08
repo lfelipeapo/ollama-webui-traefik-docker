@@ -39,11 +39,11 @@ docker-compose down
 
 # Aguarda um pouco e força a remoção de qualquer container remanescente do projeto docker-compose
 sleep 2
-remaining_containers=$(docker ps -q --filter "label=com.docker.compose.project")
+remaining_containers=$(docker ps -aq --filter "label=com.docker.compose.project")
 if [[ -n "$remaining_containers" ]]; then
     echo "Forçando remoção dos containers remanescentes do projeto docker-compose..."
     for container in $remaining_containers; do
-        sudo docker kill -s SIGKILL "$container" && sudo docker rm -f "$container"
+        sudo docker container rm -f "$container" && echo "✅ Container $container removido." || echo "⚠️ Falha ao remover container $container."
     done
 else
     echo "Nenhum container remanescente do docker-compose encontrado."
