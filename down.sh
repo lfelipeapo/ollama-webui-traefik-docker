@@ -15,6 +15,20 @@ kill_port_if_in_use() {
     fi
 }
 
+# Função para matar um container pegando seu PID com docker inspect
+kill_container_by_pid() {
+    local container=$1
+    # Obtém o PID do container (exemplo: open-webui)
+    local pid
+    pid=$(sudo docker inspect --format '{{.State.Pid}}' "$container")
+    if [[ -n "$pid" && "$pid" != "0" ]]; then
+        echo "Matando container '$container' (PID: $pid)..."
+        kill -9 "$pid" && echo "✅ Processo do container '$container' (PID: $pid) finalizado." || echo "⚠️ Falha ao matar o processo do container '$container'."
+    else
+        echo "Nenhum PID válido encontrado para o container '$container'."
+    fi
+}
+
 # Lista de portas a serem liberadas
 ports=(80 81 443 444 8080 8181 11434 11435)
 
@@ -23,7 +37,7 @@ for port in "${ports[@]}"; do
     kill_port_if_in_use "$port"
 done
 
-# Finaliza processos docker-proxy
+# Finaliza processos docker-proxy (caso existam)
 echo "Finalizando processos docker-proxy..."
 pids=$(pgrep -f docker-proxy)
 if [[ -n "$pids" ]]; then
@@ -37,22 +51,19 @@ fi
 echo "Derrubando os containers via docker-compose..."
 docker-compose down
 
-# Aguarda um pouco para o docker-compose encerrar os containers
+# Aguarda um pouco para garantir que o docker-compose tenha derrubado os containers
 sleep 2
 
-# Reinicia o serviço do Docker (daemon)
-echo "Reiniciando o serviço do Docker..."
-sudo systemctl restart docker
-
-# Aguarda para garantir que o Docker seja reiniciado
-sleep 2
-
-# Força a remoção de qualquer container remanescente do projeto docker-compose
+# Lista os containers do projeto (baseado no label do docker-compose)
 remaining_containers=$(docker ps -aq --filter "label=com.docker.compose.project")
 if [[ -n "$remaining_containers" ]]; then
     echo "Forçando remoção dos containers remanescentes do projeto docker-compose..."
     for container in $remaining_containers; do
-        docker container rm -f "$container" && echo "✅ Container $container removido." || echo "⚠️ Falha ao remover container $container."
+        echo "Verificando container '$container'..."
+        kill_container_by_pid "$container"
+        sleep 1
+        echo "Removendo container '$container'..."
+        docker container rm -f "$container" && echo "✅ Container '$container' removido." || echo "⚠️ Falha ao remover container '$container'."
     done
 else
     echo "Nenhum container remanescente do docker-compose encontrado."
