@@ -1,20 +1,29 @@
 #!/bin/bash
 
-# 1) Verifica se o Docker está instalado; se não, instala.
-if ! command -v docker &> /dev/null; then
-    echo "🔧 Instalando Docker e dependências..."
-    bash install-docker.sh
+# Verifica se o Docker está instalado e se o serviço está ativo
+if command -v docker >/dev/null 2>&1; then
+    if sudo systemctl is-active docker >/dev/null 2>&1; then
+        echo "✅ Docker já está instalado e o serviço está ativo."
+    else
+        echo "⚠️ Docker instalado, mas o serviço não está ativo. Tentando iniciar..."
+        sudo systemctl start docker
+        if sudo systemctl is-active docker >/dev/null 2>&1; then
+            echo "✅ Docker iniciado com sucesso."
+        else
+            echo "❌ Falha ao iniciar o serviço do Docker. Verifique a instalação."
+            exit 1
+        fi
+    fi
 else
-    echo "✅ Docker já está instalado."
+    echo "🔧 Docker não encontrado. Instalando Docker e dependências..."
+    bash install-docker.sh
 fi
 
-# 2) Função para matar processos que estejam ocupando determinada porta usando lsof
+# Função para matar processos que estão usando determinada porta com lsof
 kill_port_if_in_use() {
     local port=$1
-    # Captura todos os PIDs usando a porta com lsof
     local pids
     pids=$(lsof -t -i :"$port" 2>/dev/null)
-    
     if [[ -n "$pids" ]]; then
         echo "🔴 A porta $port está em uso pelos processos: $pids. Matando processos..."
         for pid in $pids; do
@@ -25,17 +34,39 @@ kill_port_if_in_use() {
     fi
 }
 
-# 3) Ajuste aqui para as portas que você usa no docker-compose
-kill_port_if_in_use 80
-kill_port_if_in_use 81
-kill_port_if_in_use 443
-kill_port_if_in_use 444
-kill_port_if_in_use 8080
-kill_port_if_in_use 8181
-kill_port_if_in_use 11434
-kill_port_if_in_use 11435
+# Função para forçar a remoção de containers remanescentes do projeto docker-compose
+force_remove_stuck_containers() {
+    local containers
+    containers=$(docker ps -aq --filter "label=com.docker.compose.project")
+    if [[ -n "$containers" ]]; then
+        echo "Forçando remoção dos containers remanescentes do projeto docker-compose..."
+        for container in $containers; do
+            echo "Verificando container $container..."
+            pid=$(sudo docker inspect --format '{{.State.Pid}}' "$container")
+            if [[ -n "$pid" && "$pid" != "0" ]]; then
+                echo "Matando processo do container $container (PID: $pid)..."
+                kill -9 "$pid"
+                sleep 1
+            fi
+            echo "Removendo container $container..."
+            docker container rm -f "$container" && echo "✅ Container $container removido." || echo "⚠️ Falha ao remover container $container."
+        done
+    else
+        echo "Nenhum container remanescente do docker-compose encontrado."
+    fi
+}
 
-# 4) Inicia o Docker Compose
+# Mata processos que estão usando as portas configuradas
+ports=(80 81 443 444 8080 8181 11434 11435)
+echo "Iniciando limpeza: matando processos que ocupam as portas..."
+for port in "${ports[@]}"; do
+    kill_port_if_in_use "$port"
+done
+
+# Força a remoção de containers remanescentes, se houver
+force_remove_stuck_containers
+
+# Inicia os containers via docker-compose
 echo "🚀 Iniciando containers..."
 docker-compose up -d
 echo "✅ Containers iniciados."
