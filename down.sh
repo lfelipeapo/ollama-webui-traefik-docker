@@ -37,13 +37,21 @@ fi
 echo "Derrubando os containers via docker-compose..."
 docker-compose down
 
-# Aguarda um pouco e força a remoção de qualquer container remanescente do projeto docker-compose
+# Aguarda um pouco para o docker-compose encerrar os containers
 sleep 2
+
+# Tenta reiniciar os containers remanescentes para desbloqueá-los
 remaining_containers=$(docker ps -aq --filter "label=com.docker.compose.project")
 if [[ -n "$remaining_containers" ]]; then
+    echo "Tentando reiniciar os containers remanescentes do projeto docker-compose..."
+    for container in $remaining_containers; do
+        echo "Reiniciando container $container..."
+        docker restart "$container" && echo "✅ Container $container reiniciado." || echo "⚠️ Falha ao reiniciar container $container."
+    done
+    sleep 2
     echo "Forçando remoção dos containers remanescentes do projeto docker-compose..."
     for container in $remaining_containers; do
-        sudo docker container rm -f "$container" && echo "✅ Container $container removido." || echo "⚠️ Falha ao remover container $container."
+        docker container rm -f "$container" && echo "✅ Container $container removido." || echo "⚠️ Falha ao remover container $container."
     done
 else
     echo "Nenhum container remanescente do docker-compose encontrado."
