@@ -40,15 +40,16 @@ docker-compose down
 # Aguarda um pouco para o docker-compose encerrar os containers
 sleep 2
 
-# Tenta reiniciar os containers remanescentes para desbloqueá-los
+# Reinicia o serviço do Docker (daemon)
+echo "Reiniciando o serviço do Docker..."
+sudo systemctl restart docker
+
+# Aguarda para garantir que o Docker seja reiniciado
+sleep 2
+
+# Força a remoção de qualquer container remanescente do projeto docker-compose
 remaining_containers=$(docker ps -aq --filter "label=com.docker.compose.project")
 if [[ -n "$remaining_containers" ]]; then
-    echo "Tentando reiniciar os containers remanescentes do projeto docker-compose..."
-    for container in $remaining_containers; do
-        echo "Reiniciando container $container..."
-        docker restart "$container" && echo "✅ Container $container reiniciado." || echo "⚠️ Falha ao reiniciar container $container."
-    done
-    sleep 2
     echo "Forçando remoção dos containers remanescentes do projeto docker-compose..."
     for container in $remaining_containers; do
         docker container rm -f "$container" && echo "✅ Container $container removido." || echo "⚠️ Falha ao remover container $container."
