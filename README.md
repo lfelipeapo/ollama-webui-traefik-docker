@@ -1,4 +1,4 @@
-# Ollama & Open WebUI with Traefik
+# Ollama & Open WebUi with Nginx
 
 This repository provides a simple setup for running [Ollama](https://ollama.com/) and [Open WebUI](https://github.com/open-webui/open-webui) with [Traefik](https://traefik.io/) as a reverse proxy using **Docker Compose**. This setup automatically downloads the required models, so everything is set up with a single command.
 
