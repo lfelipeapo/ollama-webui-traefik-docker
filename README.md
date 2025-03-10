@@ -1,6 +1,6 @@
 # Ollama & Open WebUi with Nginx
 
-This repository provides a simple setup for running [Ollama](https://ollama.com/) and [Open WebUI](https://github.com/open-webui/open-webui) with [Traefik](https://traefik.io/) as a reverse proxy using **Docker Compose**. This setup automatically downloads the required models, so everything is set up with a single command.
+This repository provides a simple setup for running [Ollama](https://ollama.com/) and [Open WebUI](https://github.com/open-webui/open-webui) with Nginx as a reverse proxy using **Docker Compose**. This setup automatically downloads the required models, so everything is set up with a single command.
 
 ## 💡 Recommended Hosting
 This example is meant to run on a small **VPS (Virtual Private Server)** showing that you can run lightweight models on dual core + 8GB RAM systems.
@@ -31,20 +31,19 @@ Ensure you have the following installed:
 
 3. Run the installation script (to install Docker if not already installed):
    ```sh
-   ./install-docker.sh
+   ./init.sh
    ```
 
-4. Start the services:
+4. To stop services:
    ```sh
-   docker-compose up -d
+   ./down.sh
    ```
 
 ## 📜 Services Included
 
-### 1. **Traefik (Reverse Proxy & SSL)**
-- Handles HTTPS with Let's Encrypt.
+### 1. **Nginx**
 - Routes traffic to **Ollama** and **Open WebUI**.
-- Configured via `traefik.yml`.
+- Configured via `nginx.conf`.
 
 ### 2. **Ollama (LLM Inference Engine)**
 - Hosts AI models.
@@ -77,7 +76,7 @@ For production deployments, consider using **Kubernetes**, **Docker Swarm**, or 
 ## 📜 Configuration
 Modify the `.env` file to set your domain:
 ```sh
-DOMAIN=srv665452.hstgr.cloud
+DOMAIN=ollama...
 ```
 
 ## 📎 Additional Notes
