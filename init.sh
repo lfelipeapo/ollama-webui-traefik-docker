@@ -1,17 +1,43 @@
 #!/bin/bash
 
+# Detecta a distribuição
+if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    OS=$ID
+else
+    echo "Sistema não suportado."
+    exit 1
+fi
+
 # Verifica se o Docker está instalado e se o serviço está ativo
 if command -v docker >/dev/null 2>&1; then
-    if sudo systemctl is-active docker >/dev/null 2>&1; then
-        echo "✅ Docker já está instalado e o serviço está ativo."
-    else
-        echo "⚠️ Docker instalado, mas o serviço não está ativo. Tentando iniciar..."
-        sudo systemctl start docker
-        if sudo systemctl is-active docker >/dev/null 2>&1; then
-            echo "✅ Docker iniciado com sucesso."
+    if [[ "$OS" == "alpine" ]]; then
+        # Para Alpine, usa OpenRC ao invés de systemctl
+        if rc-service docker status >/dev/null 2>&1; then
+            echo "✅ Docker já está instalado e o serviço está ativo."
         else
-            echo "❌ Falha ao iniciar o serviço do Docker. Verifique a instalação."
-            exit 1
+            echo "⚠️ Docker instalado, mas o serviço não está ativo. Tentando iniciar..."
+            rc-service docker start
+            if rc-service docker status >/dev/null 2>&1; then
+                echo "✅ Docker iniciado com sucesso."
+            else
+                echo "❌ Falha ao iniciar o serviço do Docker. Verifique a instalação."
+                exit 1
+            fi
+        fi
+    else
+        # Para Ubuntu/Debian usa systemctl
+        if sudo systemctl is-active docker >/dev/null 2>&1; then
+            echo "✅ Docker já está instalado e o serviço está ativo."
+        else
+            echo "⚠️ Docker instalado, mas o serviço não está ativo. Tentando iniciar..."
+            sudo systemctl start docker
+            if sudo systemctl is-active docker >/dev/null 2>&1; then
+                echo "✅ Docker iniciado com sucesso."
+            else
+                echo "❌ Falha ao iniciar o serviço do Docker. Verifique a instalação."
+                exit 1
+            fi
         fi
     fi
 else
@@ -23,7 +49,14 @@ fi
 kill_port_if_in_use() {
     local port=$1
     local pids
-    pids=$(lsof -t -i :"$port" 2>/dev/null)
+
+    if command -v lsof >/dev/null 2>&1; then
+        pids=$(lsof -t -i :"$port" 2>/dev/null)
+    else
+        echo "⚠️ lsof não encontrado. Tentando usar netstat..."
+        pids=$(netstat -tulnp 2>/dev/null | grep ":$port" | awk '{print $7}' | cut -d'/' -f1)
+    fi
+
     if [[ -n "$pids" ]]; then
         echo "🔴 A porta $port está em uso pelos processos: $pids. Matando processos..."
         for pid in $pids; do
@@ -42,7 +75,7 @@ force_remove_stuck_containers() {
         echo "Forçando remoção dos containers remanescentes do projeto docker-compose..."
         for container in $containers; do
             echo "Verificando container $container..."
-            pid=$(sudo docker inspect --format '{{.State.Pid}}' "$container")
+            pid=$(docker inspect --format '{{.State.Pid}}' "$container")
             if [[ -n "$pid" && "$pid" != "0" ]]; then
                 echo "Matando processo do container $container (PID: $pid)..."
                 kill -9 "$pid"
