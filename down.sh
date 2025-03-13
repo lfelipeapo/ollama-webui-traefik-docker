@@ -1,5 +1,22 @@
 #!/bin/bash
 
+# Detecta a distribuição para instalar dependências se necessário
+if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    OS=$ID
+else
+    echo "Sistema não suportado."
+    exit 1
+fi
+
+# Verifica se está rodando no Alpine Linux e instala dependências
+if [[ "$OS" == "alpine" ]]; then
+    echo "🔍 Detected Alpine Linux. Checking for required packages..."
+
+    # Instala pacotes necessários
+    apk add --no-cache lsof procps
+fi
+
 # Função para matar processos que estão usando uma determinada porta com lsof
 kill_port_if_in_use() {
     local port=$1
@@ -18,7 +35,6 @@ kill_port_if_in_use() {
 # Função para matar um container pegando seu PID com docker inspect
 kill_container_by_pid() {
     local container=$1
-    # Obtém o PID do container (exemplo: open-webui)
     local pid
     pid=$(sudo docker inspect --format '{{.State.Pid}}' "$container")
     if [[ -n "$pid" && "$pid" != "0" ]]; then
@@ -47,11 +63,15 @@ else
     echo "Nenhum processo docker-proxy encontrado."
 fi
 
-# Derruba os containers via docker-compose
+# Derruba os containers via docker-compose (ou docker compose, dependendo da versão)
 echo "Derrubando os containers via docker-compose..."
-docker-compose down
+if command -v docker-compose &> /dev/null; then
+    docker-compose down
+else
+    docker compose down
+fi
 
-# Aguarda um pouco para garantir que o docker-compose tenha derrubado os containers
+# Aguarda um pouco para garantir que os containers tenham sido parados
 sleep 2
 
 # Lista os containers do projeto (baseado no label do docker-compose)
@@ -69,4 +89,4 @@ else
     echo "Nenhum container remanescente do docker-compose encontrado."
 fi
 
-echo "Limpeza completa! Containers e processos liberados!"
+echo "🚀 Limpeza completa! Containers e processos liberados!"
