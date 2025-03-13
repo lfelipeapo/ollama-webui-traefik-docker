@@ -42,10 +42,10 @@ services:
         wait
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:11434/api/tags || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
+      interval: 30s      # Aumentado para 30s
+      timeout: 10s       # Aumentado para 10s
+      retries: 10        # Tentar por mais tempo
+      start_period: 60s  # Dar mais tempo para o Ollama iniciar
 
   open-webui:
     image: ghcr.io/open-webui/open-webui:main
