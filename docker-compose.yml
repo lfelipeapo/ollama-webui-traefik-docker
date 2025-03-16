@@ -40,14 +40,19 @@ services:
             sleep 2
         done
         echo "📥 Baixando modelos dentro do container Ollama..."
-        docker exec ollama ollama pull gemma3:27b
-        docker exec ollama ollama pull qwq:32b
-        docker exec ollama ollama pull deepseek-r1:1.5b
-        docker exec ollama ollama pull qwen2.5-coder:1.5b
-        docker exec ollama ollama pull codegemma:2b
+        docker exec ollama ollama pull gemma3:12b
+        docker exec ollama ollama pull llava:13b
+        docker exec ollama ollama pull llama2-uncensored:7b
+        docker exec ollama ollama pull llama3.2-vision:11b
+        docker exec ollama ollama pull llava-llama3:8b
+        docker exec ollama ollama pull codellama:13b
+        docker exec ollama ollama pull starcoder2:15b
+        docker exec ollama ollama pull starcoder2:15b-instruct
+        docker exec ollama ollama pull deepseek-coder-v2:16b-lite-instruct-q5_K_S
+        docker exec ollama ollama pull deepseek-r1:14b
+        docker exec ollama ollama pull codegemma:7b
         docker exec ollama ollama pull phi4-mini
         docker exec ollama ollama pull phi4
-        docker exec ollama ollama pull llama3.3
         docker exec ollama ollama pull qwen2.5:14b
         docker exec ollama ollama pull qwen2.5-coder:14b
         echo "✅ Modelos baixados. Encerrando..."
