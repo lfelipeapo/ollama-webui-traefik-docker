@@ -69,6 +69,7 @@ services:
       - "8181:8080"
     volumes:
       - ./webui-data:/app/data
+      - ./open-webui:/app
 
 networks:
   default:
