@@ -70,6 +70,7 @@ services:
     volumes:
       - ./webui-data:/app/data
       - ./open-webui:/app
+    command: ["/bin/sh", "-c", "sleep infinity"]
 
 networks:
   default:
