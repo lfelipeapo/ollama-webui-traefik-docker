@@ -40,7 +40,7 @@ services:
             sleep 2
         done
         echo "📥 Baixando modelos dentro do container Ollama..."
-        docker exec ollama ollama pull gemma3:12b
+        docker exec ollama ollama pull gemma3:4b
         docker exec ollama ollama pull llava:13b
         docker exec ollama ollama pull llama2-uncensored:7b
         docker exec ollama ollama pull llama3.2-vision:11b
