@@ -24,7 +24,7 @@ Ensure you have the following installed:
    cd ollama-webui-traefik-docker
    ```
 
-2. Set up your domain by modifying the `.env` file:
+2. Set up your domain by modifying the `.env` file. The Nginx template will read this value when the container starts:
    ```sh
    DOMAIN=srv665452.hstgr.cloud  # Change this to your actual domain
    ```
@@ -43,7 +43,7 @@ Ensure you have the following installed:
 
 ### 1. **Nginx**
 - Routes traffic to **Ollama** and **Open WebUI**.
-- Configured via `nginx.conf`.
+- Configuration is generated from `nginx/templates/default.conf.template` using the `DOMAIN` value from `.env`.
 
 ### 2. **Ollama (LLM Inference Engine)**
 - Hosts AI models.
@@ -78,7 +78,7 @@ This repository is intended for **example purposes only** and is not recommended
 For production deployments, consider using **Kubernetes**, **Docker Swarm**, or other orchestration tools to ensure high availability and security.
 
 ## 📜 Configuration
-Modify the `.env` file to set your domain:
+Modify the `.env` file to set your domain. The value will be injected into the Nginx configuration at startup:
 ```sh
 DOMAIN=ollama...
 ```
