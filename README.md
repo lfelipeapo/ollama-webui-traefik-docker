@@ -71,7 +71,7 @@ Usage:
 ```
 
 ### `upload.sh`
-Uploads all files in the diretory to the VPS via SCP
+Uploads all files in the directory to the VPS via SCP
 
 ## ⚠️ **Production Warning**
 This repository is intended for **example purposes only** and is not recommended for production use.
@@ -86,6 +86,7 @@ DOMAIN=ollama...
 ## 📎 Additional Notes
 - This setup automatically downloads AI models inside the Ollama container.
 - Make sure to configure your DNS settings to point your domain to your server's IP.
+- A `.gitignore` file keeps data directories and log files out of version control.
 
 ## 📝 License
 This project is licensed under the MIT License.
