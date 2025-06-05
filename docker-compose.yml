@@ -75,6 +75,14 @@ services:
     volumes:
       - ./webui-data:/app/data
 
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --cleanup open-webui
+
 networks:
   default:
     name: ollama-network

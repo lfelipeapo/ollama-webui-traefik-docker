@@ -57,6 +57,10 @@ Ensure you have the following installed:
 - Provides a web-based interface for interacting with AI models.
 - Accessible via `https://your-domain/`.
 
+### 5. **Watchtower (Automatic Updates)**
+- Monitors the `open-webui` container and pulls new images when available.
+- Keeps the WebUI updated without impacting the Ollama service.
+
 ## 🛠 Scripts
 
 ### `request-ollama.sh`
