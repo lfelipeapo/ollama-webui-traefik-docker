@@ -68,8 +68,10 @@ services:
     environment:
       - OLLAMA_BASE_URLS=http://ollama:11434
       - ENV=dev
-      - WEBUI_AUTH=False
-      - WEBUI_SECRET_KEY=t0p-s3cr3t
+      - WEBUI_AUTH=${WEBUI_AUTH:-True}
+      - WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY}
+      - WEBUI_ADMIN_EMAIL=${WEBUI_ADMIN_EMAIL:-admin@example.com}
+      - WEBUI_ADMIN_PASSWORD=${WEBUI_ADMIN_PASSWORD:-changeme}
     ports:
       - "8181:8080"
     volumes:
