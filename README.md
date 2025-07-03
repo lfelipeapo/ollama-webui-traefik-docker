@@ -96,6 +96,24 @@ WEBUI_SECRET_KEY=your-secret-key
 - Make sure to configure your DNS settings to point your domain to your server's IP.
 - A `.gitignore` file keeps data directories and log files out of version control.
 
+## ❓ Troubleshooting Login Loop
+If you are redirected back to the authentication page repeatedly and cannot type
+your credentials, try the following:
+
+1. **Check environment variables** – confirm that `WEBUI_SECRET_KEY`,
+   `WEBUI_ADMIN_EMAIL` and `WEBUI_ADMIN_PASSWORD` are correctly set in your `.env`
+   file. Restart the containers after any change.
+2. **Access the WebUI directly** – open `http://localhost:8181` to bypass Nginx
+   and verify that the login screen appears normally. If it works, review the
+   `DOMAIN` value in `.env` and ensure you access the same domain through Nginx.
+3. **Clear browser cookies** – stale session cookies may cause redirection
+   loops. Try an incognito window or clear cookies for your domain.
+4. **Inspect container logs** – run `docker logs open-webui` to look for errors
+   related to authentication or missing variables.
+5. **Disable authentication temporarily** – set `WEBUI_AUTH=false` in `.env` to
+   confirm that the service works without auth. Re-enable it once the issue is
+   resolved.
+
 ## 📝 License
 This project is licensed under the MIT License.
 
