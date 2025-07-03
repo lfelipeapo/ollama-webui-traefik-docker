@@ -24,9 +24,13 @@ Ensure you have the following installed:
    cd ollama-webui-traefik-docker
    ```
 
-2. Set up your domain by modifying the `.env` file. The Nginx template will read this value when the container starts:
+2. Copy `.env.example` to `.env` and adjust the values for your environment. The Nginx template will read these variables when the containers start:
    ```sh
+   cp .env.example .env
    DOMAIN=srv665452.hstgr.cloud  # Change this to your actual domain
+   WEBUI_ADMIN_EMAIL=admin@example.com
+   WEBUI_ADMIN_PASSWORD=changeme
+   WEBUI_SECRET_KEY=your-secret-key
    ```
 
 3. Run the installation script (to install Docker if not already installed):
@@ -43,7 +47,7 @@ Ensure you have the following installed:
 
 ### 1. **Nginx**
 - Routes traffic to **Ollama** and **Open WebUI**.
-- Configuration is generated from `nginx/templates/default.conf.template` using the `DOMAIN` value from `.env`.
+ - Configuration is generated from `nginx/templates/default.conf.template` using the `DOMAIN` value from the environment file.
 
 ### 2. **Ollama (LLM Inference Engine)**
 - Hosts AI models.
@@ -78,13 +82,17 @@ This repository is intended for **example purposes only** and is not recommended
 For production deployments, consider using **Kubernetes**, **Docker Swarm**, or other orchestration tools to ensure high availability and security.
 
 ## 📜 Configuration
-Modify the `.env` file to set your domain. The value will be injected into the Nginx configuration at startup:
+Modify the `.env` file (copied from `.env.example`) to set your domain and WebUI credentials. These values will be injected into the Nginx configuration and Open WebUI at startup:
 ```sh
 DOMAIN=ollama...
+WEBUI_ADMIN_EMAIL=admin@example.com
+WEBUI_ADMIN_PASSWORD=changeme
+WEBUI_SECRET_KEY=your-secret-key
 ```
 
 ## 📎 Additional Notes
-- This setup automatically downloads AI models inside the Ollama container.
+ - This setup automatically downloads AI models inside the Ollama container and stores them in `ollama-data` so they are reused between runs.
+ - Open WebUI data is stored in `webui-data` to preserve chats and settings across updates.
 - Make sure to configure your DNS settings to point your domain to your server's IP.
 - A `.gitignore` file keeps data directories and log files out of version control.
 

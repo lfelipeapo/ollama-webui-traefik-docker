@@ -26,36 +26,14 @@ services:
       - "11434:11434"
 
   ollama-model-loader:
-    image: docker:latest 
+    image: docker:latest
     container_name: ollama-model-loader
     depends_on:
       - ollama
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock 
-    entrypoint: ["/bin/sh", "-c"]
-    command:
-      - |
-        echo "⏳ Aguardando o Ollama iniciar..."
-        until docker exec ollama ollama list >/dev/null 2>&1; do
-            sleep 2
-        done
-        echo "📥 Baixando modelos dentro do container Ollama..."
-        docker exec ollama ollama pull gemma3:4b
-        docker exec ollama ollama pull llava:13b
-        docker exec ollama ollama pull llama2-uncensored:7b
-        docker exec ollama ollama pull llama3.2-vision:11b
-        docker exec ollama ollama pull llava-llama3:8b
-        docker exec ollama ollama pull codellama:13b
-        docker exec ollama ollama pull starcoder2:15b
-        docker exec ollama ollama pull starcoder2:15b-instruct
-        docker exec ollama ollama pull deepseek-coder-v2:16b-lite-instruct-q5_K_S
-        docker exec ollama ollama pull deepseek-r1:14b
-        docker exec ollama ollama pull codegemma:7b
-        docker exec ollama ollama pull phi4-mini
-        docker exec ollama ollama pull phi4
-        docker exec ollama ollama pull qwen2.5:14b
-        docker exec ollama ollama pull qwen2.5-coder:14b
-        echo "✅ Modelos baixados. Encerrando..."
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./ensure-models.sh:/ensure-models.sh:ro
+    entrypoint: ["/bin/sh", "/ensure-models.sh"]
     restart: "no"
 
   open-webui:
@@ -75,7 +53,7 @@ services:
     ports:
       - "8181:8080"
     volumes:
-      - ./webui-data:/app/data
+      - ./webui-data:/app/backend/data
 
   watchtower:
     image: containrrr/watchtower
